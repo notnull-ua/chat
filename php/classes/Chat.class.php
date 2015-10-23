@@ -11,10 +11,10 @@ class Chat
     public static function login($name, $email)
     {
         if (!$name || !$email) {
-            throw new Exception ('Çàïîëíèòå âñå íåîáõîäèì³å ïîëÿ.');
+            throw new Exception ('Ð—Ð°Ð¿Ð¾Ð»Ð½Ð¸Ñ‚Ðµ Ð²ÑÐµ Ð½ÐµÐ¾Ð±Ñ…Ð¾Ð´Ð¸Ð¼Ñ‹Ðµ Ð¿Ð¾Ð»Ñ.');
         }
         if (!filter_input(INPUT_POST, 'email', FILTER_VALIDATE_EMAIL)) {
-            throw new Exception ("Íåïðàâèëüíûé àäðåñ email.");
+            throw new Exception ("ÐÐµÐ¿Ñ€Ð°Ð²Ð¸Ð»ÑŒÐ½Ñ‹Ð¹ Ð°Ð´Ñ€ÐµÑ email.");
         }
 
         $gravatar = md5(strtolower(trim($email)));
@@ -25,7 +25,7 @@ class Chat
         ));
 
         if ($user->save()->affected_rows != 1) {
-            throw new Exception ('Äàííîå èìÿ èñïîëüçóåòñÿ.');
+            throw new Exception ('Ð”Ð°Ð½Ð½Ð¾Ðµ Ð¸Ð¼Ñ Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·ÑƒÐµÑ‚ÑÑ.');
         }
 
         $_SESSION['user'] = array(
@@ -52,10 +52,83 @@ class Chat
         }
         return $response;
     }
-    public static function logout(){
-        DB::query("DELETE FROM webchat_users WHERE name= '".DB::esc($_SESSION['user']['name'])."'");
+
+    public static function logout()
+    {
+        DB::query("DELETE FROM webchat_users WHERE name= '" . DB::esc($_SESSION['user']['name']) . "'");
         $_SESSION = array();
         unset($_SESSION);
-        return array('status'=>1);
+        return array('status' => 1);
+    }
+
+    public static function  submitChat($chatText)
+    {
+        if (!$_SESSION['user']) {
+            throw new Exception('Ð’Ñ‹ Ð²Ñ‹ÑˆÐ»Ð¸ Ð¸Ð· Ñ‡Ð°Ñ‚Ð°.');
+        }
+
+        if (!$chatText) {
+            throw new Exception('Ð’Ñ‹ Ð½Ðµ Ð²Ð²ÐµÐ»Ð¸ ÑÐ¾Ð¾Ð±Ñ‰ÐµÐ½Ð¸Ðµ.');
+        }
+
+        $chat = new ChatLine(array(
+            'author' => $_SESSION['user']['name'],
+            'gravatar' => $_SESSION['user']['name'],
+            'text' => $chatText
+        ));
+
+        $insertID = $chat->save()->insert_id;
+
+        return array(
+            'status' => 1,
+            'insertID' => $insertID
+        );
+
+    }
+
+    public static function getUsers()
+    {
+        if ($_SESSION['user']['name']) {
+            $user = new ChatUser(array(
+                'name' => $_SESSION['user']['name']));
+            $user->update();
+        }
+
+        DB::query("DELETE FROM webchat_lines WHERE ts < SUBTIME(NOW(), '0:5:0')");
+        DB::query("DELETE FROM webchat_users WHERE  last_activity < SUBTIME (NOW(), '0:0:30')");
+
+        $result = DB::query('SELECT * FROM webchat_user ORDER BY  name ASC LIMIT 18');
+
+        $user = array();
+        while ($user = $result->fetch_object()) {
+            $user->gravatar = Chat::gravatarFromHash($user->gravatar, 30);
+            $users[] = $user;
+        }
+
+        return array(
+            'users' => $users,
+            'total' => DB::query('SELECT COUNT(*) as cnt FROM  webchat_users')->fetch_object()->cnt
+        );
+    }
+
+    public static function getChats($lastID)
+    {
+        $lastID = (int)$lastID;
+
+        $result = DB::query('SELECT * FROM webchat_lines  WHERE  id > ' . $lastID . ' ORDER BY id ASC');
+
+        $chats = array();
+        while ($chat = $result->fetch_object()) {
+            $chat->time = array(
+                'hours' => gmdate('H', strtotime($chat->ts)),
+                'minutes' => gmdate('i', strtotime($chat->ts))
+            );
+            $chat->gravatar = Chat::gravatarFromHash($chat->gravatar);
+            $chats[] = $chat;
+        }
+        return array('chats' => $chats);
+    }
+    public static  function  gravatarFromHash($hash, $size=23){
+        return 'http://www.gravatar.com/avatar/'.$hash.'?size='.$size. '&amp;default='. urldecode('http://www.gravatar.com/avatar/ad516503a11cd5ca435acc9bb6523536?size='.$size);
     }
 }

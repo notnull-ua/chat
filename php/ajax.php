@@ -6,7 +6,7 @@ $dbOptions = array(
     'db_host' => 'localhost',
     'db_user' => 'root',
     'db_pass' => '',
-    'db_name' => 'tables'
+    'db_name' => 'chat_db'
 );
 
 /* Конец секции конфигурации базы данных */

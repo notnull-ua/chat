@@ -100,7 +100,7 @@ var chat = {
         });
 
 
-        $('a.logoutButton').live('click',function(){
+        $(document).on('click','a.logoutButton',function(){
 
             $('#chatTopBar > span').fadeOut(function(){
                 $(this).remove();

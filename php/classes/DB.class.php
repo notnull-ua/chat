@@ -1,42 +1,42 @@
 <?php
 
-/**
- * Created by PhpStorm.
- * User: Vladislav
- * Date: 21.10.2015
- * Time: 22:58
- */
-class DB
-{
-    private static $instance;
-    private $MySQLi;
+class DB {
+	private static $instance;
+	private $MySQLi;
+	
+	private function __construct(array $dbOptions){
 
-    private function  __cunstruct(array $dbOptions)
-    {
-        $this->MySQLi = @ new mysqli($dbOptions['db_host'],
-            $dbOptions['db_user'],
-            $dbOptions['db_pass'],
-            $dbOptions['db_name']);
-        if(mysqli_connect_errno()){
-            throw new Exception ('Îøèáêà áàçû äàííûõ.');
-        }
-        $this->MySQLi->set_charset("utf8");
-    }
+		$this->MySQLi = @ new mysqli(	$dbOptions['db_host'],
+										$dbOptions['db_user'],
+										$dbOptions['db_pass'],
+										$dbOptions['db_name'] );
 
-    public  static  function init(array $dbOptions){
-        if(self::$instance instanceof self){
-            return false;
-        }
-        self::$instance = new self($dbOptions);
-    }
+		if (mysqli_connect_errno()) {
+			throw new Exception('ÐžÑˆÐ¸Ð±ÐºÐ° Ð±Ð°Ð·Ñ‹ Ð´Ð°Ð½Ð½Ñ‹Ñ….');
+		}
 
-    public static function getMySQLiObject(){
-        return self::$instance->MySQLi;
-    }
-    public  static  function  query($q){
-        return self::$instance->MySQLi->query($q);
-    }
-    public static function  esc($str){
-        return self::$instance->MySQLi->real_escape_string(htmlspecialchars($str));
-    }
+		$this->MySQLi->set_charset("utf8");
+	}
+	
+	public static function init(array $dbOptions){
+		if(self::$instance instanceof self){
+			return false;
+		}
+		
+		self::$instance = new self($dbOptions);
+	}
+	
+	public static function getMySQLiObject(){
+		return self::$instance->MySQLi;
+	}
+	
+	public static function query($q){
+		return self::$instance->MySQLi->query($q);
+	}
+	
+	public static function esc($str){
+		return self::$instance->MySQLi->real_escape_string(htmlspecialchars($str));
+	}
 }
+
+?>
